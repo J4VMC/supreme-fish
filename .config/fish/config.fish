@@ -79,6 +79,9 @@ set -gx EDITOR "emacsclient -t -a ''"
 # VISUAL is used by some GUI-aware tools. -c opens a new graphical window.
 set -gx VISUAL "emacsclient -c -a emacs"
 
+# JAVA_HOME for Emacs
+set -gx JAVA_HOME (/usr/libexec/java_home)
+
 # =============================================================================
 # 2. INTERACTIVE-ONLY SETUP
 # =============================================================================
