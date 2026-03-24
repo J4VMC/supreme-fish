@@ -66,13 +66,12 @@ if test -d "$HOMEBREW_PREFIX/share/fish/vendor_completions.d"
 end
 
 # --- Custom PATH Additions ---
-fish_add_path -g \
-    /usr/local/opt/ruby/bin \
-    $HOME/.gem/ruby/3.3.0/bin \
-    $HOMEBREW_PREFIX/opt/grep/libexec/gnubin \
-    $HOME/.cargo/bin \
-    "$HOME/Library/Application Support/Coursier/bin" \
-    $HOME/.local/bin
+fish_add_path -g /usr/local/opt/ruby/bin
+fish_add_path -g $HOME/.gem/ruby/3.3.0/bin
+fish_add_path -g $HOMEBREW_PREFIX/opt/grep/libexec/gnubin
+fish_add_path -g $HOME/.cargo/bin
+fish_add_path -g $HOME/.local/bin
+fish_add_path -g "$HOME/Library/Application Support/Coursier/bin"
 
 # -t opens the buffer directly inside your terminal window (perfect for git commits)
 # -a '' automatically starts the daemon in the background if it isn't running yet
