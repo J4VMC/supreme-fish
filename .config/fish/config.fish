@@ -67,6 +67,8 @@ end
 
 # --- Custom PATH Additions ---
 fish_add_path -g \
+    /usr/local/opt/ruby/bin \
+    $HOME/.gem/ruby/3.3.0/bin \
     $HOMEBREW_PREFIX/opt/grep/libexec/gnubin \
     $HOME/.cargo/bin \
     "$HOME/Library/Application Support/Coursier/bin" \
