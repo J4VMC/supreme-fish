@@ -1,4 +1,4 @@
-function regen-shell-inits --description 'Regenerate the static init snapshots in conf.d (starship/zoxide/direnv)'
+function regen-shell-inits --description 'Regenerate the static init snapshots in conf.d (starship/zoxide/direnv/pyenv)'
     # These files in conf.d are committed snapshots of `<tool> init fish` output. Sourcing a
     # static file is much cheaper than running the tool's init on every shell start, but the
     # snapshots drift when the tools are upgraded. Run this after a `brew upgrade` (maintain
@@ -32,6 +32,19 @@ function regen-shell-inits --description 'Regenerate the static init snapshots i
             direnv hook fish
         end >$confd/direnv_hook.fish
         echo "🔀 direnv_hook.fish regenerated"
+    end
+
+    if command -q pyenv
+        # The snapshot embeds the Cellar-versioned completions path, which is
+        # exactly the kind of drift a post-upgrade regen (via maintain) fixes.
+        # The snapshot hardcodes its own paths — it does not need PYENV_ROOT
+        # (exported in config.fish, which loads after conf.d) at source time.
+        begin
+            printf '%s\n' $header
+            printf '%s\n' '# Snapshot of `pyenv init - fish` - avoids spawning pyenv on every shell start.'
+            pyenv init - fish
+        end >$confd/pyenv_init.fish
+        echo "🐍 pyenv_init.fish regenerated"
     end
 
     # NOTE: the mcfly snapshot was REMOVED along with mcfly itself. Its
