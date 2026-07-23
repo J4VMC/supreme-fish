@@ -106,6 +106,14 @@ if set -q nvm_default_version
     fish_add_path -g $HOME/.local/share/nvm/$nvm_default_version/bin
 end
 
+# Pyenv shims must WIN over Homebrew's own python3 in /usr/local/bin.
+# conf.d/pyenv_init.fish prepends the shims at startup, but every
+# fish_add_path call in this file runs AFTER conf.d and lands in front
+# of them — leaving Homebrew's python3 shadowing pyenv's. --move pulls
+# the (already-present) shims entry back to the front; keep this line
+# below all other PATH additions in this file.
+fish_add_path -gm $PYENV_ROOT/shims
+
 # -t opens the buffer directly inside your terminal window (perfect for git commits)
 # -a '' automatically starts the daemon in the background if it isn't running yet
 set -gx EDITOR "emacsclient -t -a ''"
