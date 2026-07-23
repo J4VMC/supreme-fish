@@ -94,6 +94,18 @@ fish_add_path -g "$HOME/Library/Application Support/Coursier/bin"
 # consult it (matches the default, kept explicit).
 set -gx PYENV_ROOT $HOME/.pyenv
 
+# Node (nvm.fish): put the default version's bin on PATH in EVERY shell.
+# The plugin's own conf.d auto-activation is guarded by `status
+# is-interactive`, so without this line non-interactive shells have no
+# node at all — including the login shell exec-path-from-shell spawns
+# for Emacs, which would silently lose node, npm, and every npm-installed
+# language server. Interactive shells still run the plugin's `nvm use`
+# on top; fish_add_path deduplicates. (Node was previously ALSO installed
+# via Homebrew, which masked this gap; nvm is now the only runtime.)
+if set -q nvm_default_version
+    fish_add_path -g $HOME/.local/share/nvm/$nvm_default_version/bin
+end
+
 # -t opens the buffer directly inside your terminal window (perfect for git commits)
 # -a '' automatically starts the daemon in the background if it isn't running yet
 set -gx EDITOR "emacsclient -t -a ''"
