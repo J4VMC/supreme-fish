@@ -26,8 +26,8 @@ function s3mount --description "Mount an S3 bucket for the current active client
     mkdir -p $mount_path
 
     rclone-mac mount :s3:$bucket $mount_path \
-	--s3-provider AWS \
-	--s3-env-auth true \
+       	--s3-provider AWS \
+	--s3-env-auth \
 	--s3-profile $profile \
 	--vfs-cache-mode full \
 	--vfs-write-back 5s \
