@@ -35,14 +35,17 @@ function regen-shell-inits --description 'Regenerate the static init snapshots i
     end
 
     if command -q pyenv
-        # The snapshot embeds the Cellar-versioned completions path, which is
-        # exactly the kind of drift a post-upgrade regen (via maintain) fixes.
-        # The snapshot hardcodes its own paths — it does not need PYENV_ROOT
-        # (exported in config.fish, which loads after conf.d) at source time.
+        # `pyenv init - fish` emits a Cellar-versioned completions path, which
+        # breaks every time `brew upgrade pyenv` bumps the version. Homebrew's
+        # opt/ symlink always points at whichever Cellar version is current,
+        # so rewrite the path to that instead — the snapshot then survives
+        # upgrades without needing a regen. The snapshot hardcodes its other
+        # paths too — it does not need PYENV_ROOT (exported in config.fish,
+        # which loads after conf.d) at source time.
         begin
             printf '%s\n' $header
             printf '%s\n' '# Snapshot of `pyenv init - fish` - avoids spawning pyenv on every shell start.'
-            pyenv init - fish
+            pyenv init - fish | string replace -r '/Cellar/pyenv/[^/]+/' '/opt/pyenv/'
         end >$confd/pyenv_init.fish
         echo "🐍 pyenv_init.fish regenerated"
     end
