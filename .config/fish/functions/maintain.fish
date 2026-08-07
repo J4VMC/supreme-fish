@@ -11,7 +11,16 @@ function maintain
     # Dumps current state to the symlinked .Brewfile in your repo
     brew bundle dump --global --describe --force
 
-    echo "🐟 4. Regenerating shell init snapshots..."
+    echo "📦 4. Updating global npm packages..."
+    if type -q npm
+        npm update -g
+        # Dumps current state to the symlinked .npm-globals in your repo
+        npm-globals dump
+    else
+        echo "   ⏭  npm not on PATH — skipped."
+    end
+
+    echo "🐟 5. Regenerating shell init snapshots..."
     # Refresh the committed conf.d snapshots so they don't drift after the upgrade above.
     regen-shell-inits
 
