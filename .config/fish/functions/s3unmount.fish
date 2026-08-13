@@ -7,7 +7,7 @@ function s3unmount --description "Unmount an S3 bucket mounted with s3mount"
     set -l mount_path (realpath $argv[1] 2>/dev/null)
 
     if test -z "$mount_path"
-	echo "s3numount: '$argv[1]' does not exist" >&2
+    	echo "s3unmount: '$argv[1]' does not exist" >&2
 	return 1
     end
 
