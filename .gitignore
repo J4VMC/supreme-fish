@@ -1,0 +1,8 @@
+.DS_Store
+
+# Machine-local helpers that must never be published. This repository is public,
+# and these files are hardcoded against private infrastructure — paths, repo
+# names, and account details that do not belong in a public history.
+# Keep them on disk; git must not see them.
+.config/fish/conf.d/*_autosync.fish
+.config/fish/functions/*_daily_sync.fish
