@@ -22,6 +22,10 @@ function maintain --description "Full maintenance pass: Homebrew, fisher, manife
         test -n "$lock_pid"; and echo "   🧹 Clearing stale lock from dead PID $lock_pid."
         echo $fish_pid >$lock_file
 
+        # Source builds from the gromgit/fuse tap need macFUSE's .pc files where
+        # the tap looks for them, and Homebrew wipes that directory on update-reset.
+        ensure-macfuse-pkgconfig
+
         # Each step is checked on its own. The old `brew update; and brew upgrade;
         # and brew cleanup` chain swallowed a failing step: the run reported success
         # while upgrade and cleanup had never executed.

@@ -70,7 +70,13 @@ function brew_daily_update
     # --- 5. Run Update ---
     echo (date) " - Starting 'brew update'..." >>$log_file
     if $brew_cmd update >>$log_file 2>&1
-        echo (date) " - 'brew update' complete. Starting 'brew upgrade'..." >>$log_file
+        echo (date) " - 'brew update' complete." >>$log_file
+
+        # `brew update` can drop the macFUSE .pc symlinks the gromgit/fuse tap
+        # needs, so restore them before anything builds from source.
+        ensure-macfuse-pkgconfig $brew_cmd >>$log_file 2>&1
+
+        echo (date) " - Starting 'brew upgrade'..." >>$log_file
 
         if $brew_cmd upgrade >>$log_file 2>&1
             echo (date) " - 'brew upgrade' complete. Starting 'brew cleanup'..." >>$log_file
