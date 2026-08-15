@@ -39,8 +39,12 @@ function brew_daily_update
     echo $fish_pid >$lock_file
     echo (date) " - Lock acquired (PID $fish_pid)." >>$log_file
 
-    # Set a Trap to ensure the file is removed when this script finishes (or crashes)
-    trap 'rm -f $lock_file' EXIT
+    # Set a Trap to ensure the file is removed when this script finishes (or crashes).
+    # The trap body is evaluated later, from a fish_exit handler, where function-local
+    # variables are long out of scope — `$lock_file` expanded to nothing there and
+    # `rm -f` silently removed no file, so every run left its lock behind.
+    set -g __brew_update_lock_file $lock_file
+    trap 'rm -f $__brew_update_lock_file' EXIT
 
     # --- 3. Find Brew ---
     set -l brew_cmd
@@ -66,7 +70,13 @@ function brew_daily_update
     # --- 5. Run Update ---
     echo (date) " - Starting 'brew update'..." >>$log_file
     if $brew_cmd update >>$log_file 2>&1
-        echo (date) " - 'brew update' complete. Starting 'brew upgrade'..." >>$log_file
+        echo (date) " - 'brew update' complete." >>$log_file
+
+        # `brew update` can drop the macFUSE .pc symlinks the gromgit/fuse tap
+        # needs, so restore them before anything builds from source.
+        ensure-macfuse-pkgconfig $brew_cmd >>$log_file 2>&1
+
+        echo (date) " - Starting 'brew upgrade'..." >>$log_file
 
         if $brew_cmd upgrade >>$log_file 2>&1
             echo (date) " - 'brew upgrade' complete. Starting 'brew cleanup'..." >>$log_file
