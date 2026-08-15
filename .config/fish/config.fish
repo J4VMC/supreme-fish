@@ -133,6 +133,12 @@ set -gx JAVA_HOME $HOMEBREW_PREFIX/opt/openjdk/libexec/openjdk.jdk/Contents/Home
 # alike, so it lives in the universal section, not the interactive one.
 set -gx PLAYWRIGHT_BROWSERS_PATH "$HOME/Library/Caches/ms-playwright"
 
+# CLIs that honor $BROWSER (aws sso login, gh auth login, ...) open URLs
+# through the profile router instead of Chrome's last-used profile. Routing
+# rules live in ~/.config/chrome-router/ (untracked); per-client .envrc
+# files re-export the same value and select their context via CLIENT_NAME.
+set -gx BROWSER $HOME/bin/chrome-route
+
 # =============================================================================
 # 2. INTERACTIVE-ONLY SETUP
 # =============================================================================
