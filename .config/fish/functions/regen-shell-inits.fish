@@ -5,12 +5,13 @@ function regen-shell-inits --description 'Regenerate the static init snapshots i
     # does it for you) to refresh them.
     set -l confd $HOME/.config/fish/conf.d
 
-    # Every tool below emits the ABSOLUTE path of its own binary (or of a
-    # completions file) into its init output. That path carries the Homebrew
-    # prefix, which differs by CPU (/opt/homebrew on Apple silicon, /usr/local
-    # on Intel), so a snapshot generated on one machine would break on the
-    # other. __regen_portable_prefix rewrites it to $HOMEBREW_PREFIX, which
-    # conf.d/00-homebrew.fish sets (before any snapshot loads) on both.
+    # Every tool below emits ABSOLUTE paths into its init output: its own
+    # binary or completions file (carrying the Homebrew prefix, which differs
+    # by CPU: /opt/homebrew on Apple silicon, /usr/local on Intel) and, for
+    # pyenv, the shims directory under the home directory (carrying the
+    # username). A snapshot generated on one machine would break on another.
+    # __regen_portable_prefix rewrites both to $HOMEBREW_PREFIX (set by
+    # conf.d/00-homebrew.fish before any snapshot loads) and $HOME.
     set -q HOMEBREW_PREFIX; or set -gx HOMEBREW_PREFIX (brew --prefix)
 
     set -l header \
@@ -72,15 +73,24 @@ function regen-shell-inits --description 'Regenerate the static init snapshots i
     echo "✅ Shell init snapshots up to date."
 end
 
-function __regen_portable_prefix --description 'Rewrite the absolute Homebrew prefix in an init snapshot to $HOMEBREW_PREFIX'
-    # Single-quoted paths (pyenv emits `source '/prefix/…'`) would keep the
-    # variable literal, so those are re-quoted with double quotes first; the
-    # remaining bare or double-quoted occurrences are a plain substitution.
-    # The `\$` in the replacement is a literal dollar sign, not a capture group.
+function __regen_portable_prefix --description 'Rewrite the absolute Homebrew prefix and home directory in an init snapshot to $HOMEBREW_PREFIX and $HOME'
+    # The prefix goes first: if Homebrew ever lived under $HOME, rewriting
+    # $HOME first would split the prefix in two.
     # `cat` is deliberate: when a function is the consumer in a pipeline,
     # fish's `string` builtin does not read the function's piped-in stdin
     # (it produces nothing), so an external reader has to feed the pipeline.
     cat \
-        | string replace -ra -- "'$HOMEBREW_PREFIX(/[^']*)'" '"\$HOMEBREW_PREFIX$1"' \
-        | string replace -a -- "$HOMEBREW_PREFIX/" '$HOMEBREW_PREFIX/'
+        | __regen_portable_path $HOMEBREW_PREFIX HOMEBREW_PREFIX \
+        | __regen_portable_path $HOME HOME
+end
+
+function __regen_portable_path --argument-names path var --description 'Replace every occurrence of PATH/ on stdin with $VAR/'
+    # Single-quoted paths (pyenv emits `source '/prefix/…'` and
+    # `'/Users/…/.pyenv/shims'`) would keep the variable literal, so those are
+    # re-quoted with double quotes first; the remaining bare or double-quoted
+    # occurrences are a plain substitution. The `\$` in the regex replacement
+    # is a literal dollar sign, not a capture group; `$1` is the capture.
+    cat \
+        | string replace -ra -- "'$path(/[^']*)'" '"\$'$var'$1"' \
+        | string replace -a -- "$path/" '$'$var'/'
 end
