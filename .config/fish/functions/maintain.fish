@@ -1,6 +1,8 @@
 # ~/dotfiles/fish/.config/fish/functions/maintain.fish
 
 function maintain --description "Full maintenance pass: Homebrew, fisher, manifests, shell snapshots"
+    argparse f/force -- $argv; or return 2
+
     set -l marker ~/.brew_last_update
     set -l lock_file ~/.brew_update.lock
     set -l brew_ok 1
@@ -41,7 +43,32 @@ function maintain --description "Full maintenance pass: Homebrew, fisher, manife
     end
 
     echo "🎣 2. Updating Fisher Plugins..."
-    fisher update
+
+    # `fisher update` with no arguments has no version check: every installed
+    # plugin goes into its update list, gets re-fetched from the repo's HEAD
+    # tarball, and is removed and reinstalled — whether or not anything changed.
+    # Run daily that is seven GitHub API calls and a full reinstall to land
+    # byte-identical files, and fisher itself bails out on an API rate limit.
+    # Once a week is plenty for HEAD-tracking plugins; `maintain --force` runs it
+    # on demand.
+    set -l fisher_marker $HOME/.local/state/fisher-last-update
+    set -l fisher_interval 604800 # 7 days, in seconds
+    set -l fisher_last 0
+    test -f $fisher_marker; and read fisher_last <$fisher_marker
+    string match -qr '^\d+$' -- "$fisher_last"; or set fisher_last 0
+
+    set -l now (date +%s)
+    if set -q _flag_force; or test (math "$now - $fisher_last") -ge $fisher_interval
+        if fisher update
+            mkdir -p (path dirname $fisher_marker)
+            echo $now >$fisher_marker
+        else
+            echo "   ❌ 'fisher update' failed — marker left alone so the next run retries." >&2
+        end
+    else
+        set -l days (math -s0 "($now - $fisher_last) / 86400")
+        echo "   ⏭  Updated $days day(s) ago — skipping. Run 'maintain --force' to update now."
+    end
 
     echo "📝 3. Updating Brewfile..."
     # Dumps current state to the symlinked .Brewfile in your repo.
