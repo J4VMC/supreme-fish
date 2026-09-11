@@ -33,7 +33,7 @@ function npm-globals --description "Install or dump the global npm package manif
             set -l listing (npm ls -g --depth=0 --json 2>/dev/null)
             set -l packages (printf '%s\n' $listing \
                 | jq -r '.dependencies // {} | keys[]' \
-                | string match -rv '^(npm|corepack)$')
+                | string match -rv '^npm$')
 
             if test (count $packages) -eq 0
                 echo "❌ Could not read the global package list — aborting, manifest untouched."

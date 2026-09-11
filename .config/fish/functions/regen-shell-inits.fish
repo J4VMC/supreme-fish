@@ -5,6 +5,14 @@ function regen-shell-inits --description 'Regenerate the static init snapshots i
     # does it for you) to refresh them.
     set -l confd $HOME/.config/fish/conf.d
 
+    # Every tool below emits the ABSOLUTE path of its own binary (or of a
+    # completions file) into its init output. That path carries the Homebrew
+    # prefix, which differs by CPU (/opt/homebrew on Apple silicon, /usr/local
+    # on Intel), so a snapshot generated on one machine would break on the
+    # other. __regen_portable_prefix rewrites it to $HOMEBREW_PREFIX, which
+    # conf.d/00-homebrew.fish sets (before any snapshot loads) on both.
+    set -q HOMEBREW_PREFIX; or set -gx HOMEBREW_PREFIX (brew --prefix)
+
     set -l header \
         '# ==============================================================================' \
         '# GENERATED FILE - do not edit by hand.' \
@@ -14,7 +22,7 @@ function regen-shell-inits --description 'Regenerate the static init snapshots i
     if command -q starship
         # --print-full-init inlines the whole init; plain `starship init fish` only emits a
         # dynamic bootstrap that re-runs starship at every startup, defeating the snapshot.
-        starship init fish --print-full-init >$confd/starship_init.fish
+        starship init fish --print-full-init | __regen_portable_prefix >$confd/starship_init.fish
         echo "🚀 starship_init.fish regenerated"
     end
 
@@ -29,7 +37,7 @@ function regen-shell-inits --description 'Regenerate the static init snapshots i
         begin
             printf '%s\n' $header
             printf '%s\n' '# Snapshot of `direnv hook fish` - avoids spawning direnv on every shell start.'
-            direnv hook fish
+            direnv hook fish | __regen_portable_prefix
         end >$confd/direnv_hook.fish
         echo "🔀 direnv_hook.fish regenerated"
     end
@@ -41,11 +49,15 @@ function regen-shell-inits --description 'Regenerate the static init snapshots i
         # so rewrite the path to that instead — the snapshot then survives
         # upgrades without needing a regen. The snapshot hardcodes its other
         # paths too — it does not need PYENV_ROOT (exported in config.fish,
-        # which loads after conf.d) at source time.
+        # which loads after conf.d) at source time; the only thing it needs
+        # at source time is $HOMEBREW_PREFIX and pyenv on PATH, both provided
+        # by conf.d/00-homebrew.fish.
         begin
             printf '%s\n' $header
             printf '%s\n' '# Snapshot of `pyenv init - fish` - avoids spawning pyenv on every shell start.'
-            pyenv init - fish | string replace -r '/Cellar/pyenv/[^/]+/' '/opt/pyenv/'
+            pyenv init - fish \
+                | string replace -r '/Cellar/pyenv/[^/]+/' '/opt/pyenv/' \
+                | __regen_portable_prefix
         end >$confd/pyenv_init.fish
         echo "🐍 pyenv_init.fish regenerated"
     end
@@ -58,4 +70,17 @@ function regen-shell-inits --description 'Regenerate the static init snapshots i
     # gone missing. History search is fzf.fish's Ctrl-R.
 
     echo "✅ Shell init snapshots up to date."
+end
+
+function __regen_portable_prefix --description 'Rewrite the absolute Homebrew prefix in an init snapshot to $HOMEBREW_PREFIX'
+    # Single-quoted paths (pyenv emits `source '/prefix/…'`) would keep the
+    # variable literal, so those are re-quoted with double quotes first; the
+    # remaining bare or double-quoted occurrences are a plain substitution.
+    # The `\$` in the replacement is a literal dollar sign, not a capture group.
+    # `cat` is deliberate: when a function is the consumer in a pipeline,
+    # fish's `string` builtin does not read the function's piped-in stdin
+    # (it produces nothing), so an external reader has to feed the pipeline.
+    cat \
+        | string replace -ra -- "'$HOMEBREW_PREFIX(/[^']*)'" '"\$HOMEBREW_PREFIX$1"' \
+        | string replace -a -- "$HOMEBREW_PREFIX/" '$HOMEBREW_PREFIX/'
 end

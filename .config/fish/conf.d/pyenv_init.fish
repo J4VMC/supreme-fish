@@ -7,7 +7,7 @@ while set pyenv_index (contains -i -- "/Users/javier/.pyenv/shims" $PATH)
 set -eg PATH[$pyenv_index]; end; set -e pyenv_index
 set -gx PATH '/Users/javier/.pyenv/shims' $PATH
 set -gx PYENV_SHELL fish
-source '/usr/local/opt/pyenv/completions/pyenv.fish'
+source "$HOMEBREW_PREFIX/opt/pyenv/completions/pyenv.fish"
 command pyenv rehash
 function pyenv
   set command $argv[1]
