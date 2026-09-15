@@ -3,7 +3,7 @@
 # =============================================================================
 #
 # Commentary:
-# This is the entry point for the Fish shell. It handles path setup, 
+# This is the entry point for the Fish shell. It handles path setup,
 # environment variables, and interactive features like prompts and aliases.
 #
 # The file is split into two main parts:
@@ -45,6 +45,14 @@ set -g fish_greeting ""
 # PATH, MANPATH/INFOPATH and completions live in conf.d/00-homebrew.fish.
 # conf.d loads before this file, so $HOMEBREW_PREFIX is already set here --
 # and, crucially, before the generated snapshots in conf.d that depend on it.
+#
+# `brew bundle dump` (run by `maintain` against ~/.Brewfile) also dumps the
+# global npm packages of whichever `npm` is on PATH as `npm "..."` lines.
+# Those must not go into the Brewfile: on a fresh machine `brew bundle` runs
+# before nvm exists and would install all of them into Homebrew's node (a
+# transitive dependency of agent-browser), the copy this setup never uses.
+# The manifest for npm globals is ~/.npm-globals (`npm-globals dump`).
+set -gx HOMEBREW_BUNDLE_DUMP_NO_NPM 1
 
 # --- Custom PATH Additions ---
 # $HOMEBREW_PREFIX, not a hardcoded /usr/local: works on both Intel and
@@ -59,6 +67,11 @@ for dir in $HOME/.gem/ruby/*/bin
 end
 fish_add_path -g $HOMEBREW_PREFIX/opt/grep/libexec/gnubin
 fish_add_path -g $HOME/.cargo/bin
+# Go tools installed by the Brewfile's `go "..."` entries (gopls, dlv, goimports,
+# golangci-lint, sqls) land in $GOPATH/bin, which defaults to ~/go/bin and is
+# on nobody's PATH by default. Emacs adds it to exec-path on its own; this
+# makes the shell agree with it.
+fish_add_path -g $HOME/go/bin
 fish_add_path -g $HOME/.local/bin
 fish_add_path -g "$HOME/Library/Application Support/Coursier/bin"
 
@@ -191,7 +204,7 @@ if status is-interactive
     # ALIASES & ABBREVIATIONS
     # -------------------------------------------------------------------------
     alias python=python3
-    abbr -a brewed 'brew bundle dump --file=~/dotfiles/homebrew/.Brewfile --force'
+    abbr -a brewed 'brew bundle dump --global --force'
     # brewup = maintain. The old expansion (update/upgrade/cleanup + regen)
     # was a near-duplicate of `maintain` that skipped the Brewfile dump and
     # never stamped ~/.brew_last_update — so the background daily job would
