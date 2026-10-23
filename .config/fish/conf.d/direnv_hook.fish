@@ -6,6 +6,7 @@
 
     function __direnv_export_eval --on-event fish_prompt;
         "$HOMEBREW_PREFIX/bin/direnv" export fish | source;
+        __direnv_update_fish_complete_path;
 
         if test "$direnv_fish_mode" != "disable_arrow";
             function __direnv_cd_hook --on-variable PWD;
@@ -13,6 +14,7 @@
                     set -g __direnv_export_again 0;
                 else;
                     "$HOMEBREW_PREFIX/bin/direnv" export fish | source;
+                    __direnv_update_fish_complete_path;
                 end;
             end;
         end;
@@ -22,8 +24,34 @@
         if set -q __direnv_export_again;
             set -e __direnv_export_again;
             "$HOMEBREW_PREFIX/bin/direnv" export fish | source;
+            __direnv_update_fish_complete_path;
             echo;
         end;
 
         functions --erase __direnv_cd_hook;
+    end;
+
+    function __direnv_update_fish_complete_path;
+        set -l desired;
+        for p in $fish_complete_path;
+            contains -- $p $__direnv_fish_complete_paths;
+            or set -a desired $p;
+        end;
+
+        set -l added;
+        for dir in (string split ':' -- $XDG_DATA_DIRS);
+            test -n "$dir"; or continue;
+            # same normalisation as fish's share/config.fish, so contains matches its own entries
+            set -l completions_dir (string replace -r '([^/])/$' '$1' -- $dir)/fish/vendor_completions.d;
+            if test -d "$completions_dir"; and not contains -- $completions_dir $desired;
+                set -a desired $completions_dir;
+                set -a added $completions_dir;
+            end;
+        end;
+        set -g __direnv_fish_complete_paths $added;
+
+        # every assignment makes fish unload autoloaded completions (complete_invalidate_path)
+        if test (count $desired) -ne (count $fish_complete_path); or test "$desired" != "$fish_complete_path";
+            set -g fish_complete_path $desired;
+        end;
     end;
