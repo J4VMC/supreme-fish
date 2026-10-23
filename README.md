@@ -46,7 +46,7 @@ The split matters for GUI apps: everything above the `status is-interactive` gua
 
 ## direnv
 
-`direnv_hook.fish` is the snapshot of `direnv hook fish`, extended with one thing the stock hook lacks: after every export it appends each `vendor_completions.d` directory that the `.envrc` added to `XDG_DATA_DIRS` to `fish_complete_path` (and drops the ones it withdrew), so project-local completions work without opening a new shell. That extension is hand-written, and `regen-shell-inits` does not yet re-apply it: after a regen, check `git diff conf.d/direnv_hook.fish` and restore the `__direnv_update_fish_complete_path` function before committing.
+`direnv_hook.fish` is the snapshot of `direnv hook fish`. Since direnv 2.38 that hook does one more thing after every export: it appends each `vendor_completions.d` directory that the `.envrc` added to `XDG_DATA_DIRS` to `fish_complete_path` (and drops the ones it withdrew), so project-local completions work without opening a new shell. The snapshot carries that logic verbatim, and `regen-shell-inits` reproduces it exactly, so it needs no special handling.
 
 `direnv.fish` is intentionally empty. Since direnv 2.38 the Homebrew formula ships `vendor_conf.d/direnv.fish`, which runs `<Cellar path>/direnv hook fish | source` on every shell start — slower than the snapshot, and the versioned Cellar path breaks every fish session left open across a `brew upgrade direnv`. A file of the same name in the user `conf.d` takes precedence, which turns the vendor hook off.
 
